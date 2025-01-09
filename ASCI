@@ -1,0 +1,129 @@
+//    /* 
+// a bcd1
+// 	b cd1
+// 		c d1
+// 			d 1
+//      */
+//     short *result = ASCI_statis("aaaaaabbbbccd1");
+//     int cnt = ASCI_look(result);
+//     struct HfmTree letters[cnt];
+//     for (size_t j = 0, i = 0; i < PRINT_SIZE; i++) {
+//         if (result[i] != 0) {
+//             letters[j].c = i + PRINT_MIN;
+//             letters[j++].Fre = result[i];
+//         }
+//     }
+//     struct HfmTree *pHead = Hfmbuild(letters, cnt);
+//     unsigned int code = 0b01011011101111000000010;
+//     HfmDecode(code, pHead);
+#include <stdlib.h>
+#include <stdio.h>
+#define PRINT_MIN 32
+#define PRINT_MAX 127
+#define PRINT_SIZE 95
+struct HfmTree {
+    char c;
+    int Fre;
+    struct HfmTree *pNext, *pPre;
+    struct HfmTree *pSon[2];
+};
+/* 创建节点 */
+struct HfmTree *HfmTree_node(struct HfmTree *p1, struct HfmTree *p2)
+{
+    struct HfmTree *ptemp = (struct HfmTree *)malloc(sizeof(struct HfmTree));
+    ptemp->Fre = p1->Fre + p2->Fre;
+    ptemp->c = 0;
+    ptemp->pSon[0] = p1;
+    ptemp->pSon[1] = p2;
+    return ptemp;
+}
+/* 空头：Fre; pNext，pPre */
+struct HfmTree *HfmTree_creat()
+{
+    struct HfmTree *ptemp = (struct HfmTree *)malloc(sizeof(struct HfmTree));
+    ptemp->pNext = ptemp->pPre = ptemp;
+    ptemp->Fre = -1;
+    return ptemp;
+}
+int HfmTree_cmp(const void *e1, const void *e2)
+{
+    return ((struct HfmTree *)e2)->Fre - ((struct HfmTree *)e1)->Fre;
+}
+void HfmTree_push(struct HfmTree *pHead, struct HfmTree *ptemp)
+{
+    ptemp->pNext = pHead;
+    ptemp->pPre = pHead->pPre;  // 先连后断
+    pHead->pPre->pNext = ptemp;
+    pHead->pPre = ptemp;
+}
+void HfmTree_enque(struct HfmTree *pHead, struct HfmTree *ptempHead, struct HfmTree *ptemp)
+{
+    if (pHead == ptempHead->pNext) {
+        HfmTree_push(pHead, ptemp);
+        return;
+    }
+    if (HfmTree_cmp(ptempHead->pNext, ptemp) < 0)  // Max
+    {
+        HfmTree_push(ptempHead->pNext, ptemp);
+    } else {
+        HfmTree_enque(pHead, ptempHead->pNext, ptemp);
+    }
+}
+void HfmTree_hpop2(struct HfmTree *pHead)
+{
+    pHead->pNext->pNext->pNext->pPre = pHead;
+    pHead->pNext = pHead->pNext->pNext->pNext;
+}
+struct HfmTree *Hfmbuild(struct HfmTree *letters, int cnt)
+{
+    struct HfmTree *pHead = HfmTree_creat();
+    for (size_t i = 0; i < cnt; i++) {
+        HfmTree_enque(pHead, pHead, &letters[i]);
+    }
+    for (size_t i = 0; i < cnt - 1; i++) {
+        struct HfmTree *pTemp = HfmTree_node(pHead->pNext, pHead->pNext->pNext);
+        HfmTree_hpop2(pHead);
+        HfmTree_enque(pHead, pHead, pTemp);
+    }
+    return pHead;
+}
+
+short *ASCI_statis(char *str)
+{
+    short *temp = (short *)malloc(PRINT_SIZE * sizeof(short));
+    memset(temp, 0, PRINT_SIZE * sizeof(short));
+    for (size_t i = 0; i < strlen(str); i++) {
+        temp[str[i] - PRINT_MIN]++;
+    }
+    return temp;
+}
+int ASCI_look(short *result)
+{
+    int cnt = 0;
+    for (size_t i = 0; i < PRINT_SIZE; i++) {
+        if (result[i] != 0) {
+            cnt++;
+            printf("%c:%hu\n", i + PRINT_MIN, result[i]);
+        }
+    }
+    return cnt;
+}
+
+void HfmDecode(unsigned int code, struct HfmTree *pHead)
+{
+    unsigned int x = code;
+    int n = 0;
+    while (x) {
+        n++;
+        x = x >> 1;  // 与运算,去尾
+    }
+    struct HfmTree *ptemp = pHead->pNext;
+    for (int flag, i = n; i >= 0; i--) {
+        flag = (code >> i & 1);
+        ptemp = ptemp->pSon[flag];
+        if (ptemp->c) {
+            putchar(ptemp->c);
+            ptemp = pHead->pNext;
+        }
+    }
+}

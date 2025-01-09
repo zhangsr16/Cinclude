@@ -1,0 +1,65 @@
+    // struct axi *p1 = getPV(Point, 1, 2, 3);
+    // struct axi *v1 = getPV(Vector, 1, 2, 3, 4, 5, 6);
+    // struct axi *v2 = getPV(Vector, 3, 2, 3, 1, 5, 6);
+    // struct face *l = getLF(Vector, v1, v2);
+    // struct face *f = getLF(Face, v1, v2);
+    // struct axi *p2 = movePoint(v1, p1);
+#include <stdlib.h>
+#include <stdio.h>
+
+/* Singleton */
+enum Dim { Point = 1, Vector, Face };
+/* Builder */
+struct axi {
+    enum Dim PV;  // Guide
+    float xyz[3];
+};
+/* Proto */
+struct face {
+    enum Dim LF;
+    struct axi *pVector[2];  // ab VV
+};
+/* Factory:ABFP */
+struct axi *getPV(int num, ...)
+{
+    va_list p;
+    _crt_va_start(p, num);
+    int clock = num * 3;
+    struct axi *a = (struct axi *)malloc(sizeof(struct axi));
+    a->PV = num;
+    for (size_t j = 0, i = 0; i < clock; i++) {
+        int temp = _crt_va_arg(p, int);
+        if (a->PV == 1) {
+            a->xyz[i] = temp;
+        } else {
+            a->xyz[j++] = _crt_va_arg(p, int) - temp;
+            i++;
+        }
+        // printf("%d ", temp);
+    }
+    _crt_va_end(p);
+    return a;
+}
+struct face *getLF(int num, struct axi *pVector1, struct axi *pVector2)
+{
+    if (pVector1->PV != 2 || pVector2->PV != 2) {
+        return 0;
+    }
+    struct face *Angle = (struct face *)malloc(sizeof(struct face));
+    Angle->pVector[0] = pVector1;
+    Angle->pVector[1] = pVector2;
+    Angle->LF = num;
+    return Angle;
+}
+struct axi *movePoint(struct axi *pVector, struct axi *pP)
+{
+    if (pVector->PV != 2 || pP->PV != 1) {
+        return 0;
+    }
+    struct axi *pEnd = (struct axi *)malloc(sizeof(struct axi));
+    for (size_t i = 0; i < 3; i++) {
+        pEnd->xyz[i] = pVector->xyz[i] + pP->xyz[i];
+    }
+    pEnd->PV = 1;
+    return pEnd;
+}

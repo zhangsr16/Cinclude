@@ -1,0 +1,76 @@
+    // const char *str[] = {"a1", "a2", "b1", "b2"};
+    // struct Hash *pHead = 0;
+    // for (size_t i = 4, j = 0; i > 0; i--, j++) {
+    //     struct Hash *ptemp = Hash_node(i, str[j], j);
+    //     HASH_ADD(hh_Index, pHead, Index, sizeof(int), ptemp);
+    // }
+    // Hash_look(pHead);
+    // struct Hash *ptemp2 = Hash_find(pHead, "a2");
+    // Hash_replace(pHead, ptemp2, 111);
+    // Hash_look(pHead);
+    // Hash_delete(pHead, ptemp2);
+    // HASH_SRT(hh_Index, pHead, cmp_index);
+    // Hash_look(pHead);
+    // printf("%d\n", HASH_CNT(hh_Index, pHead));
+#include <stdio.h>
+#include <string.h>
+#include <uthash.h>
+/* 序hh_Index/Name, 键名Index/Name */
+struct Hash {
+    int Index;  /* Key = Index */
+    char *Name; /* Key = Name */
+    int Val;
+    UT_hash_handle hh_Index; /* Address_Table = Index */
+    UT_hash_handle hh_Name;  /* Address_Table = Name */
+};
+
+/* 创建节点 */
+struct Hash *Hash_node(int index, const char *name, int val)
+{
+    struct Hash *temp = (struct Hash *)malloc(sizeof(struct Hash));
+    temp->Index = index;
+    temp->Name = (char *)malloc(strlen(name));
+    strcpy(temp->Name, name);
+    temp->Val = val;
+    return temp;
+}
+/* 增：pHead!=0，表头会变 */
+void Hash_push(struct Hash *pHead, struct Hash *ptemp)
+{
+    HASH_ADD(hh_Index, pHead, Index, sizeof(int), ptemp);  // 表头可空
+}
+/* 查：&表头，键值index/name */
+struct Hash *Hash_find(struct Hash *pHead, const char *name)
+{
+    struct Hash *ptemp, *pnext;
+    HASH_ITER(hh_Index, pHead, ptemp, pnext)  // 自带FIND_STR有BUG
+    {
+        if (strcmp(name, ptemp->Name) == 0)
+            return ptemp;
+    }
+    return 0;
+}
+/*删：单节点; &表头，&待删 */
+void Hash_delete(struct Hash *pHead, struct Hash *del)
+{
+    HASH_DELETE(hh_Index, pHead, del);
+}
+/*查：正序遍历; &表头 */
+void Hash_look(struct Hash *pHead)
+{
+    struct Hash *ptemp, *pnext;
+    HASH_ITER(hh_Index, pHead, ptemp, pnext)
+    {  // hh
+        printf("Index: %d, Name: %s, Val: %d\n", ptemp->Index, ptemp->Name, ptemp->Val);
+    }
+}
+/*改：值替换;&表头，&待改，新值val;*/
+void Hash_replace(struct Hash *pHead, struct Hash *rep, int val)
+{
+    rep->Val = val;
+}
+/* 排序: HASH_SORT */
+int cmp_index(const struct Hash *a, const struct Hash *b)
+{
+    return (a->Index - b->Index);
+}

@@ -1,223 +1,250 @@
-	// struct Net2D ***a = Net2D_creat(3, 3);
-	// Net2D_BFS(a[1][1]);
-	// Net2D_unlook(a, 3, 3);
-	// putchar('\n');
-	// Net2D_DFS(a[1][1]);
-	// struct Net3D ****b = Net3D_creat(2, 3, 4);
-	// Net3D_DFS(b[1][1][1]);
-	// Net3D_unlook(b, 2, 3, 4);
-	// putchar('\n');
-	// Net3D_BFS(b[1][1][1]);
+    // srand(time(NULL));
+    // struct Net2D ***a = Net2D_creat(3, 3);
+    // Net2D_BFS(a[1][1]);
+    // Net2D_unlook(a, 3, 3);
+    // Net2D_DFS(a[1][1]);
+    // Net2D_unlook(a, 3, 3);
+    // Net2D_RFS(a[1][1]);    
+    // struct Net3D ****b = Net3D_creat(2, 3, 4);
+    // Net3D_DFS(b[1][1][1]);
+    // Net3D_unlook(b, 2, 3, 4);
+    // Net3D_BFS(b[1][1][1]);
+    // Net3D_unlook(b, 2, 3, 4);
+    // Net3D_RFS(b[1][1][1]);
 #include <stdio.h>
 #include <stdlib.h>
-int g_Dir[6][3] = {{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
-
+#include <time.h>
 #define Que_Len 30
-struct Net2D
-{
-	int Val;
-	unsigned int axix, axiy;
-	struct Net2D *pAdj[4];
+enum Dim { D2 = 2, D3 };
+int g_Dir[D3 * 2][D3] = {{-1, 0, 0}, {1, 0, 0}, {0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}};
+
+struct Net2D {
+    int Val;
+    unsigned int axix, axiy;
+    struct Net2D *pAdj[D2 * 2];
 };
 /* 2D{Val; axix, axiy; px0,px1, py0,py1} */
 struct Net2D ***Net2D_creat(unsigned int x, unsigned int y)
 {
-	struct Net2D ***arr = (struct Net2D ***)malloc(x * sizeof(struct Net2D *)); // arr[0,x]
-	for (size_t i = 0; i < x; i++)
-	{
-		arr[i] = (struct Net2D **)malloc(y * sizeof(struct Net2D *)); // arr[i][0,y]
-		for (size_t j = 0; j < y; j++)
-		{
-			arr[i][j] = (struct Net2D *)malloc(sizeof(struct Net2D)); // arr[i][j]=pNet2D
-		}
-	}
-	for (size_t i = 0; i < x; i++)
-	{
-		for (size_t j = 0; j < y && arr[i][j]; j++)
-		{
-			arr[i][j]->axix = i;
-			arr[i][j]->axiy = j;
-			arr[i][j]->Val = 0;
-			for (int tx, ty, k = 0; k < 4; k++)
-			{
-				tx = i + g_Dir[k][0];
-				ty = j + g_Dir[k][1];
+    struct Net2D ***arr = (struct Net2D ***)malloc(x * sizeof(struct Net2D *));  // arr[0,x]
+    for (size_t i = 0; i < x; i++) {
+        arr[i] = (struct Net2D **)malloc(y * sizeof(struct Net2D *));  // arr[i][0,y]
+        for (size_t j = 0; j < y; j++) {
+            arr[i][j] = (struct Net2D *)malloc(sizeof(struct Net2D));  // arr[i][j]=pNet2D
+        }
+    }
+    for (size_t i = 0; i < x; i++) {
+        for (size_t j = 0; j < y && arr[i][j]; j++) {
+            arr[i][j]->axix = i;
+            arr[i][j]->axiy = j;
+            arr[i][j]->Val = 0;
+            for (int tx, ty, k = 0; k < D2 * 2; k++) {
+                tx = i + g_Dir[k][0];
+                ty = j + g_Dir[k][1];
 
-				if (tx < 0 || ty < 0 || tx >= x || ty >= y)
-				{
-					arr[i][j]->pAdj[k] = 0;
-				}
-				else
-				{
-					arr[i][j]->pAdj[k] = arr[tx][ty];
-				}
-			}
-		}
-	}
-	return arr;
+                if (tx < 0 || ty < 0 || tx >= x || ty >= y) {
+                    arr[i][j]->pAdj[k] = 0;
+                } else {
+                    arr[i][j]->pAdj[k] = arr[tx][ty];
+                }
+            }
+        }
+    }
+    return arr;
 };
 /* 深度优先0->1：2D[i][j] */
 void Net2D_DFS(struct Net2D *pNode)
 {
-	if (pNode)
-	{
-		if (pNode->Val == 0)
-		{
-			printf("%u %u\n", pNode->axix, pNode->axiy);
-			pNode->Val = 1;
-			for (size_t i = 0; i < 4; i++)
-			{
-				Net2D_DFS(pNode->pAdj[i]);
-			}
-		}
-	}
-	return;
+    if (pNode) {
+        if (pNode->Val == 0) {
+            printf("%u %u\n", pNode->axix, pNode->axiy);
+            pNode->Val = 1;
+            for (size_t i = 0; i < D2 * 2; i++) {
+                Net2D_DFS(pNode->pAdj[i]);
+            }
+        }
+    }
+    return;
 }
+/* 广度优先0->1：2D[i][j] */
 void Net2D_BFS(struct Net2D *pNode)
 {
-	pNode->Val = 1;
-	struct Net2D *Queue[Que_Len];
-	Queue[0] = pNode;
-	int Qn = 1;
-	struct Net2D *ptemp;
-	printf("%u %u\n", pNode->axix, pNode->axiy);
-	while (Qn)
-	{
-		ptemp = Queue[0];
-		memmove(Queue, Queue + 1, sizeof(ptemp) * Qn);
-		Qn--;
-		for (size_t i = 0; i < 4; i++)
-		{
-			if (ptemp->pAdj[i] && ptemp->pAdj[i]->Val == 0)
-			{
-				Queue[Qn++] = ptemp->pAdj[i];
-				ptemp->pAdj[i]->Val = 1;
-				printf("%u %u\n", ptemp->pAdj[i]->axix, ptemp->pAdj[i]->axiy);
-			}
-		}
-	}
+    pNode->Val = 1;
+    struct Net2D *Queue[Que_Len];
+    Queue[0] = pNode;
+    int Qn = 1;
+    struct Net2D *ptemp;
+    printf("%u %u\n", pNode->axix, pNode->axiy);
+    while (Qn) {
+        ptemp = Queue[0];
+        memmove(Queue, Queue + 1, sizeof(ptemp) * Qn);
+        Qn--;
+        for (size_t i = 0; i < D2 * 2; i++) {
+            if (ptemp->pAdj[i] && ptemp->pAdj[i]->Val == 0) {
+                Queue[Qn++] = ptemp->pAdj[i];
+                ptemp->pAdj[i]->Val = 1;
+                printf("%u %u\n", ptemp->pAdj[i]->axix, ptemp->pAdj[i]->axiy);
+            }
+        }
+    }
+}
+/* 随机优先0->1：2D[i][j] */
+void Net2D_RFS(struct Net2D *pNode)
+{
+    if (pNode) {
+        if (pNode->Val == 0) {
+            printf("%u %u\n", pNode->axix, pNode->axiy);
+            pNode->Val = 1;
+            int Que[D2 * 2];
+            int QueLen = 0;
+            for (; QueLen < D2 * 2;) {
+                int randstep = rand() % (D2 * 2);
+                int flag = 0;
+                for (size_t i = 0; i < QueLen; i++) {
+                    if (Que[i] == randstep) {
+                        flag = 1;
+                        break;
+                    }
+                }
+                if (flag == 0) {
+                    QueLen++;
+                    // printf(" s=%d\n", randstep);
+                    Net2D_RFS(pNode->pAdj[randstep]);
+                }
+            }
+        }
+    }
+    return;
 }
 /* 标签复位1->0：2D[i][j]*/
 void Net2D_unlook(struct Net2D ***m, unsigned int x, unsigned int y)
 {
-	for (size_t i = 0; i < x; i++)
-	{
-		for (size_t j = 0; j < y; j++)
-		{
-			m[i][j]->Val = 0;
-			printf("%d\t", m[i][j]->Val);
-		}
-		putchar('\n');
-	}
+    for (size_t i = 0; i < x; i++) {
+        for (size_t j = 0; j < y; j++) {
+            m[i][j]->Val = 0;
+            printf("%d\t", m[i][j]->Val);
+        }
+        putchar('\n');
+    }
 }
-/* 3D{Val; axix, axiy, axiz; pAdj[6]} */
-struct Net3D
-{
-	int Val;
-	unsigned int axix, axiy, axiz;
-	struct Net3D *pAdj[6];
+
+/* 3D{Val; axix, axiy, axiz; pAdj[D3*2]} */
+struct Net3D {
+    int Val;
+    unsigned int axix, axiy, axiz;
+    struct Net3D *pAdj[D3 * 2];
 };
 /* 3D(x ,y ,z) */
 struct Net3D ****Net3D_creat(unsigned int x, unsigned int y, unsigned int z)
 {
-	struct Net3D ****arr = (struct Net3D ****)malloc(x * sizeof(struct Net3D *)); // arr[0,x]
-	for (size_t i = 0; i < x; i++)
-	{
-		arr[i] = (struct Net3D ***)malloc(y * sizeof(struct Net3D *)); // arr[i][0,y]
-		for (size_t j = 0; j < y; j++)
-		{
-			arr[i][j] = (struct Net3D **)malloc(z * sizeof(struct Net3D *)); // arr[i][j][0,z]
-			for (size_t k = 0; k < z; k++)
-			{
-				arr[i][j][k] = (struct Net3D *)malloc(sizeof(struct Net3D)); // arr[i][j][k]=pNet3D
-			}
-		}
-	}
-	for (size_t i = 0; i < x; i++)
-	{
-		for (size_t j = 0; j < y; j++)
-		{
-			for (size_t k = 0; k < z && arr[i][j][k]; k++)
-			{
-				arr[i][j][k]->axix = i;
-				arr[i][j][k]->axiy = j;
-				arr[i][j][k]->axiz = k;
-				arr[i][j][k]->Val = 0;
-				for (int tx, ty, tz, l = 0; l < 6; l++)
-				{
-					tx = i + g_Dir[l][0];
-					ty = j + g_Dir[l][1];
-					tz = k + g_Dir[l][2];
-					if (tx < 0 || ty < 0 || tz < 0 || tx >= x || ty >= y || tz >= z)
-					{
-						arr[i][j][k]->pAdj[l] = 0;
-					}
-					else
-					{
-						arr[i][j][k]->pAdj[l] = arr[tx][ty][tz];
-					}
-				}
-			}
-		}
-	}
-	return arr;
+    struct Net3D ****arr = (struct Net3D ****)malloc(x * sizeof(struct Net3D *));  // arr[0,x]
+    for (size_t i = 0; i < x; i++) {
+        arr[i] = (struct Net3D ***)malloc(y * sizeof(struct Net3D *));  // arr[i][0,y]
+        for (size_t j = 0; j < y; j++) {
+            arr[i][j] = (struct Net3D **)malloc(z * sizeof(struct Net3D *));  // arr[i][j][0,z]
+            for (size_t k = 0; k < z; k++) {
+                arr[i][j][k] = (struct Net3D *)malloc(sizeof(struct Net3D));  // arr[i][j][k]=pNet3D
+            }
+        }
+    }
+    for (size_t i = 0; i < x; i++) {
+        for (size_t j = 0; j < y; j++) {
+            for (size_t k = 0; k < z && arr[i][j][k]; k++) {
+                arr[i][j][k]->axix = i;
+                arr[i][j][k]->axiy = j;
+                arr[i][j][k]->axiz = k;
+                arr[i][j][k]->Val = 0;
+                for (int tx, ty, tz, l = 0; l < D3 * 2; l++) {
+                    tx = i + g_Dir[l][0];
+                    ty = j + g_Dir[l][1];
+                    tz = k + g_Dir[l][2];
+                    if (tx < 0 || ty < 0 || tz < 0 || tx >= x || ty >= y || tz >= z) {
+                        arr[i][j][k]->pAdj[l] = 0;
+                    } else {
+                        arr[i][j][k]->pAdj[l] = arr[tx][ty][tz];
+                    }
+                }
+            }
+        }
+    }
+    return arr;
 };
 /* 深度优先0->1：3D[i][j][k] */
-void Net3D_DFS(struct Net3D *pNode)
+void Net3D_DFS(void *ptemp)
 {
-	if (pNode)
-	{
-		if (pNode->Val == 0)
-		{
-			printf("%u %u %u\n", pNode->axix, pNode->axiy, pNode->axiz);
-			pNode->Val = 1;
-			for (size_t i = 0; i < 6; i++)
-			{
-				Net3D_DFS(pNode->pAdj[i]);
-			}
-		}
-	}
-	return;
+    struct Net3D *pNode = (struct Net3D *)ptemp;
+    if (pNode) {
+        if (pNode->Val == 0) {
+            printf("%u %u %u\n", pNode->axix, pNode->axiy, pNode->axiz);
+            pNode->Val = 1;
+            for (size_t i = 0; i < D3 * 2; i++) {
+                Net3D_DFS(pNode->pAdj[i]);
+            }
+        }
+    }
+    return;
 }
 /* 广度优先0->1：3D[i][j][k] */
 void Net3D_BFS(struct Net3D *pNode)
 {
-	pNode->Val = 1;
-	struct Net3D *Queue[Que_Len];
-	Queue[0] = pNode;
-	int Qn = 1;
-	struct Net3D *ptemp;
-	printf("%u %u %u\n", pNode->axix, pNode->axiy, pNode->axiz);
-	while (Qn)
-	{
-		ptemp = Queue[0];
-		memmove(Queue, Queue + 1, sizeof(ptemp) * Qn);
-		Qn--;
-		for (size_t i = 0; i < 6; i++)
-		{
-			if (ptemp->pAdj[i] && ptemp->pAdj[i]->Val == 0)
-			{
-				Queue[Qn++] = ptemp->pAdj[i];
-				ptemp->pAdj[i]->Val = 1;
-				printf("%u %u %u\n", ptemp->pAdj[i]->axix, ptemp->pAdj[i]->axiy, ptemp->pAdj[i]->axiy);
-			}
-		}
-	}
+    pNode->Val = 1;
+    struct Net3D *Queue[Que_Len];
+    Queue[0] = pNode;
+    int Qn = 1;
+    struct Net3D *ptemp;
+    printf("%u %u %u\n", pNode->axix, pNode->axiy, pNode->axiz);
+    while (Qn) {
+        ptemp = Queue[0];
+        memmove(Queue, Queue + 1, sizeof(ptemp) * Qn);
+        Qn--;
+        for (size_t i = 0; i < D3 * 2; i++) {
+            if (ptemp->pAdj[i] && ptemp->pAdj[i]->Val == 0) {
+                Queue[Qn++] = ptemp->pAdj[i];
+                ptemp->pAdj[i]->Val = 1;
+                printf("%u %u %u\n", ptemp->pAdj[i]->axix, ptemp->pAdj[i]->axiy, ptemp->pAdj[i]->axiy);
+            }
+        }
+    }
+}
+/* 随机优先0->1：3D[i][j][k] */
+void Net3D_RFS(struct Net3D *pNode)
+{
+    if (pNode) {
+        if (pNode->Val == 0) {
+            printf("%u %u %u\n", pNode->axix, pNode->axiy, pNode->axiz);
+            pNode->Val = 1;
+            int Que[D3 * 2];
+            int QueLen = 0;
+            for (; QueLen < D3 * 2;) {
+                int randstep = rand() % (D3 * 2);
+                int flag = 0;
+                for (size_t i = 0; i < QueLen; i++) {
+                    if (Que[i] == randstep) {
+                        flag = 1;
+                        break;
+                    }
+                }
+                if (flag == 0) {
+                    QueLen++;
+                    // printf(" s=%d\n", randstep);
+                    Net3D_RFS(pNode->pAdj[randstep]);
+                }
+            }
+        }
+    }
+    return;
 }
 /* 标签复位1->0：3D[i][j][k]*/
 void Net3D_unlook(struct Net3D ****m3, unsigned int x, unsigned int y, unsigned int z)
 {
-	for (size_t i = 0; i < x; i++)
-	{
-		printf("%d..\n", i);
-		for (size_t j = 0; j < y; j++)
-		{
-			for (size_t k = 0; k < z; k++)
-			{
-				m3[i][j][k]->Val = 0;
-				printf("%d\t", m3[i][j][k]->Val);
-			}
-			putchar('\n');
-		}
-	}
+    for (size_t i = 0; i < x; i++) {
+        printf("%d..\n", i);
+        for (size_t j = 0; j < y; j++) {
+            for (size_t k = 0; k < z; k++) {
+                m3[i][j][k]->Val = 0;
+                printf("%d\t", m3[i][j][k]->Val);
+            }
+            putchar('\n');
+        }
+    }
 }
